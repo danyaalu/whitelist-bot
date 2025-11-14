@@ -156,7 +156,7 @@ module.exports = {
 
     // Send whitelist command to the selected server
     await interaction.editReply({
-      content: `⏳ Adding **${mojangData.username}** to **${serverConfig.displayName}**...`,
+      content: `⏳ Adding **${mojangData.username}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
     const result = await rconManager.whitelistOnServer(
@@ -201,7 +201,7 @@ module.exports = {
 
     // Send whitelist command to the selected server
     await interaction.editReply({
-      content: `⏳ Adding **${gamertag}** to **${serverConfig.displayName}**...`,
+      content: `⏳ Adding **${gamertag}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
     const result = await rconManager.whitelistOnServer(

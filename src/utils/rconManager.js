@@ -1,6 +1,24 @@
 const { Rcon } = require('rcon-client');
 
 class RconManager {
+  constructor() {
+    this.connectionTimeout = 10000; // 10 seconds for connection
+    this.commandTimeout = 5000;     // 5 seconds for command execution
+  }
+
+  /**
+   * Create a timeout promise
+   * @param {number} ms - Milliseconds to wait
+   * @param {string} operation - Operation name for error message
+   */
+  createTimeout(ms, operation) {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Operation timed out after ${ms / 1000} seconds: ${operation}`));
+      }, ms);
+    });
+  }
+
   /**
    * Execute a command on a single server via RCON
    * @param {Object} serverConfig - Server configuration
@@ -12,14 +30,23 @@ class RconManager {
     let rcon;
     
     try {
-      rcon = await Rcon.connect({
-        host: serverConfig.rconHost,
-        port: serverConfig.rconPort,
-        password: serverConfig.rconPassword,
-        timeout: 10000 // 10 second timeout
-      });
+      // Wrap entire operation in a timeout
+      const operationPromise = (async () => {
+        rcon = await Rcon.connect({
+          host: serverConfig.rconHost,
+          port: serverConfig.rconPort,
+          password: serverConfig.rconPassword,
+          timeout: this.connectionTimeout
+        });
 
-      const response = await rcon.send(command);
+        const response = await rcon.send(command);
+        return response;
+      })();
+
+      const response = await Promise.race([
+        operationPromise,
+        this.createTimeout(this.connectionTimeout + this.commandTimeout, 'RCON connection and command execution')
+      ]);
       
       return {
         success: true,
@@ -27,10 +54,21 @@ class RconManager {
         response
       };
     } catch (error) {
+      let errorMessage = error.message;
+      
+      // Provide more helpful error messages
+      if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Connection refused. Check if RCON is enabled and the server is running.';
+      } else if (error.message.includes('ETIMEDOUT') || error.message.includes('timed out')) {
+        errorMessage = 'Connection timed out. Server may be offline or overloaded.';
+      } else if (error.message.includes('authentication')) {
+        errorMessage = 'Authentication failed. Check RCON password.';
+      }
+      
       return {
         success: false,
         serverName,
-        error: error.message
+        error: errorMessage
       };
     } finally {
       if (rcon) {
