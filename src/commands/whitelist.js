@@ -3,6 +3,11 @@ const fileManager = require('../utils/fileManager');
 const mojangApi = require('../utils/mojangApi');
 const rconManager = require('../utils/rconManager');
 
+// Helper function to format platform name
+function formatPlatform(platform) {
+  return platform === 'java' ? 'Java' : 'Bedrock';
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('whitelist')
@@ -140,7 +145,7 @@ module.exports = {
           const existingEntry = users[discordUserId].servers[serverId];
           return await interaction.editReply({
             content: `❌ You are already whitelisted on **${serverConfig.displayName}**!\n\n` +
-              `**Platform:** ${existingEntry.platform}\n` +
+              `**Platform:** ${formatPlatform(existingEntry.platform)}\n` +
               `**Username:** ${existingEntry.username}\n\n` +
               `If you need to change your entry, please contact an administrator.`,
           });
@@ -238,8 +243,7 @@ module.exports = {
         content: `✅ **Successfully whitelisted!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
           `**Platform:** Java Edition\n` +
-          `**Username:** ${mojangData.username}\n` +
-          `**UUID:** ${mojangData.uuid}`,
+          `**Username:** ${mojangData.username}\n`,
       });
     } else {
       await interaction.editReply({
