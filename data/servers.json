@@ -1,7 +1,7 @@
 {
   "discordServers": {
     "1438678148571988172": {
-      "name": "danyaal's server 1",
+      "name": "danyaal's server",
       "minecraftServers": ["s1", "s2"]
     },
     "987654321098765432": {
@@ -11,7 +11,7 @@
   },
   "minecraftServers": {
     "s1": {
-      "displayName": "LMaSMP",
+      "displayName": "localhost-0",
       "rconHost": "127.0.0.1",
       "rconPort": 25575,
       "rconPassword": "hello",
@@ -19,10 +19,10 @@
       "whitelistCommandBedrock": "fwhitelist add {gamertag}"
     },
     "s2": {
-      "displayName": "Creative Server",
-      "rconHost": "192.168.1.100",
-      "rconPort": 25575,
-      "rconPassword": "another_password",
+      "displayName": "localhost-1",
+      "rconHost": "127.0.0.1",
+      "rconPort": 25576,
+      "rconPassword": "hello",
       "whitelistCommandJava": "whitelist add {username}",
       "whitelistCommandBedrock": "fwhitelist add {gamertag}"
     },

@@ -6,41 +6,75 @@ const rconManager = require('../utils/rconManager');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('whitelist')
-    .setDescription('Add yourself to a Minecraft server whitelist')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('java')
-        .setDescription('Whitelist your Java Edition username')
-        .addStringOption(option =>
-          option
-            .setName('server')
-            .setDescription('The Minecraft server to whitelist on')
-            .setRequired(true)
-            .setAutocomplete(true)
+    .setDescription('Manage Minecraft server whitelist')
+    .addSubcommandGroup(group =>
+      group
+        .setName('add')
+        .setDescription('Add yourself to a server whitelist')
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('java')
+            .setDescription('Add your Java Edition username to whitelist')
+            .addStringOption(option =>
+              option
+                .setName('server')
+                .setDescription('The Minecraft server to whitelist on')
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option =>
+              option
+                .setName('username')
+                .setDescription('Your Minecraft Java Edition username')
+                .setRequired(true)
+            )
         )
-        .addStringOption(option =>
-          option
-            .setName('username')
-            .setDescription('Your Minecraft Java Edition username')
-            .setRequired(true)
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('bedrock')
+            .setDescription('Add your Bedrock Edition gamertag to whitelist')
+            .addStringOption(option =>
+              option
+                .setName('server')
+                .setDescription('The Minecraft server to whitelist on')
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
+            .addStringOption(option =>
+              option
+                .setName('gamertag')
+                .setDescription('Your Minecraft Bedrock Edition gamertag')
+                .setRequired(true)
+            )
         )
     )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('bedrock')
-        .setDescription('Whitelist your Bedrock Edition gamertag')
-        .addStringOption(option =>
-          option
-            .setName('server')
-            .setDescription('The Minecraft server to whitelist on')
-            .setRequired(true)
-            .setAutocomplete(true)
+    .addSubcommandGroup(group =>
+      group
+        .setName('remove')
+        .setDescription('Remove yourself from a server whitelist')
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('java')
+            .setDescription('Remove your Java Edition whitelist entry')
+            .addStringOption(option =>
+              option
+                .setName('server')
+                .setDescription('The Minecraft server to remove from')
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
         )
-        .addStringOption(option =>
-          option
-            .setName('gamertag')
-            .setDescription('Your Minecraft Bedrock Edition gamertag')
-            .setRequired(true)
+        .addSubcommand(subcommand =>
+          subcommand
+            .setName('bedrock')
+            .setDescription('Remove your Bedrock Edition whitelist entry')
+            .addStringOption(option =>
+              option
+                .setName('server')
+                .setDescription('The Minecraft server to remove from')
+                .setRequired(true)
+                .setAutocomplete(true)
+            )
         )
     ),
 
@@ -74,6 +108,7 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     try {
+      const subcommandGroup = interaction.options.getSubcommandGroup();
       const subcommand = interaction.options.getSubcommand();
       const serverId = interaction.options.getString('server');
       const discordUserId = interaction.user.id;
@@ -95,25 +130,52 @@ module.exports = {
       }
 
       const serverConfig = serversConfig.minecraftServers[serverId];
-      
-      // Load users data
-      let users = await fileManager.loadUsers();
 
-      // Check if user already has an entry for this server
-      if (fileManager.userExistsOnServer(users, discordUserId, serverId)) {
-        const existingEntry = users[discordUserId].servers[serverId];
-        return await interaction.editReply({
-          content: `❌ You are already whitelisted on **${serverConfig.displayName}**!\n\n` +
-            `**Platform:** ${existingEntry.platform}\n` +
-            `**Username:** ${existingEntry.username}\n\n` +
-            `If you need to change your entry, please contact an administrator.`,
-        });
-      }
+      if (subcommandGroup === 'add') {
+        // Load users data
+        let users = await fileManager.loadUsers();
 
-      if (subcommand === 'java') {
-        await this.handleJavaWhitelist(interaction, users, discordUserId, serverId, serverConfig, serversConfig);
-      } else if (subcommand === 'bedrock') {
-        await this.handleBedrockWhitelist(interaction, users, discordUserId, serverId, serverConfig, serversConfig);
+        // Check if user already has an entry for this server
+        if (fileManager.userExistsOnServer(users, discordUserId, serverId)) {
+          const existingEntry = users[discordUserId].servers[serverId];
+          return await interaction.editReply({
+            content: `❌ You are already whitelisted on **${serverConfig.displayName}**!\n\n` +
+              `**Platform:** ${existingEntry.platform}\n` +
+              `**Username:** ${existingEntry.username}\n\n` +
+              `If you need to change your entry, please contact an administrator.`,
+          });
+        }
+
+        if (subcommand === 'java') {
+          await this.handleJavaAdd(interaction, users, discordUserId, serverId, serverConfig, serversConfig);
+        } else if (subcommand === 'bedrock') {
+          await this.handleBedrockAdd(interaction, users, discordUserId, serverId, serverConfig, serversConfig);
+        }
+      } else if (subcommandGroup === 'remove') {
+        // Load users data
+        let users = await fileManager.loadUsers();
+
+        // Check if user has an entry for this server
+        if (!fileManager.userExistsOnServer(users, discordUserId, serverId)) {
+          return await interaction.editReply({
+            content: `❌ You are not whitelisted on **${serverConfig.displayName}**.\n\nUse \`/whitelist add ${subcommand}\` to add yourself first.`,
+          });
+        }
+
+        const userEntry = users[discordUserId].servers[serverId];
+        
+        // Validate that the platform matches the subcommand
+        if ((subcommand === 'java' && userEntry.platform !== 'java') || (subcommand === 'bedrock' && userEntry.platform !== 'bedrock')) {
+          return await interaction.editReply({
+            content: `❌ You are whitelisted on **${serverConfig.displayName}** as **${userEntry.platform === 'java' ? 'Java' : 'Bedrock'} Edition**.\n\nUse \`/whitelist remove ${userEntry.platform}\` instead.`,
+          });
+        }
+
+        if (subcommand === 'java') {
+          await this.handleJavaRemove(interaction, users, discordUserId, serverId, serverConfig, userEntry);
+        } else if (subcommand === 'bedrock') {
+          await this.handleBedrockRemove(interaction, users, discordUserId, serverId, serverConfig, userEntry);
+        }
       }
     } catch (error) {
       console.error('Error in whitelist command:', error);
@@ -130,7 +192,7 @@ module.exports = {
     }
   },
 
-  async handleJavaWhitelist(interaction, users, discordUserId, serverId, serverConfig, serversConfig) {
+  async handleJavaAdd(interaction, users, discordUserId, serverId, serverConfig, serversConfig) {
     const username = interaction.options.getString('username');
 
     // Basic validation
@@ -189,7 +251,7 @@ module.exports = {
     }
   },
 
-  async handleBedrockWhitelist(interaction, users, discordUserId, serverId, serverConfig, serversConfig) {
+  async handleBedrockAdd(interaction, users, discordUserId, serverId, serverConfig, serversConfig) {
     const gamertag = interaction.options.getString('gamertag');
 
     // Basic validation (Bedrock gamertags have different rules)
@@ -229,6 +291,90 @@ module.exports = {
           `**Server:** ${serverConfig.displayName}\n` +
           `**Error:** ${result.error}\n\n` +
           `Please contact an administrator for assistance.`,
+      });
+    }
+  },
+
+  async handleJavaRemove(interaction, users, discordUserId, serverId, serverConfig, userEntry) {
+    const username = userEntry.username;
+
+    // Send remove command to the server
+    await interaction.editReply({
+      content: `⏳ Removing **${username}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
+    });
+
+    // Build remove command
+    const removeCommand = serverConfig.whitelistRemoveCommandJava || 'whitelist remove {username}';
+    const command = removeCommand
+      .replace('{uuid}', userEntry.uuid || username)
+      .replace('{username}', username);
+
+    const result = await rconManager.executeCommand(serverConfig, command, serverId);
+
+    if (result.success) {
+      // Remove from users.json
+      delete users[discordUserId].servers[serverId];
+      
+      // If user has no more servers, remove the entire entry
+      if (Object.keys(users[discordUserId].servers).length === 0) {
+        delete users[discordUserId];
+      }
+      
+      await fileManager.saveUsers(users);
+
+      await interaction.editReply({
+        content: `✅ **Successfully removed from whitelist!**\n\n` +
+          `**Server:** ${serverConfig.displayName}\n` +
+          `**Platform:** Java Edition\n` +
+          `**Username:** ${username}`,
+      });
+    } else {
+      await interaction.editReply({
+        content: `❌ **Failed to remove from whitelist**\n\n` +
+          `**Server:** ${serverConfig.displayName}\n` +
+          `**Error:** ${result.error}\n\n` +
+          `Your entry has NOT been removed from the bot's database.\nPlease contact an administrator for assistance.`,
+      });
+    }
+  },
+
+  async handleBedrockRemove(interaction, users, discordUserId, serverId, serverConfig, userEntry) {
+    const gamertag = userEntry.username;
+
+    // Send remove command to the server
+    await interaction.editReply({
+      content: `⏳ Removing **${gamertag}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
+    });
+
+    // Build remove command
+    const removeCommand = serverConfig.whitelistRemoveCommandBedrock || 'fwhitelist remove {gamertag}';
+    const command = removeCommand.replace('{gamertag}', gamertag);
+
+    const result = await rconManager.executeCommand(serverConfig, command, serverId);
+
+    if (result.success) {
+      // Remove from users.json
+      delete users[discordUserId].servers[serverId];
+      
+      // If user has no more servers, remove the entire entry
+      if (Object.keys(users[discordUserId].servers).length === 0) {
+        delete users[discordUserId];
+      }
+      
+      await fileManager.saveUsers(users);
+
+      await interaction.editReply({
+        content: `✅ **Successfully removed from whitelist!**\n\n` +
+          `**Server:** ${serverConfig.displayName}\n` +
+          `**Platform:** Bedrock Edition\n` +
+          `**Gamertag:** ${gamertag}`,
+      });
+    } else {
+      await interaction.editReply({
+        content: `❌ **Failed to remove from whitelist**\n\n` +
+          `**Server:** ${serverConfig.displayName}\n` +
+          `**Error:** ${result.error}\n\n` +
+          `Your entry has NOT been removed from the bot's database.\nPlease contact an administrator for assistance.`,
       });
     }
   },

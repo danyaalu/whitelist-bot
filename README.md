@@ -5,12 +5,14 @@ A production-ready Discord bot for managing Minecraft server whitelists via RCON
 ## Features
 
 ✅ **Slash Commands** - Modern Discord slash commands with server selection  
+✅ **Self-Service Whitelist Management** - Users can add and remove themselves  
 ✅ **Multi-Discord Server Support** - One bot can manage whitelists for multiple Discord communities  
 ✅ **Per-Server Configuration** - Each Discord server can manage different Minecraft servers  
 ✅ **Mojang API Validation** - Validates Java Edition usernames and fetches UUIDs  
 ✅ **RCON Integration** - Sends whitelist commands directly to your Minecraft servers  
 ✅ **Per-Server Whitelisting** - Users can be whitelisted on different servers independently  
 ✅ **Autocomplete** - Server selection with user-friendly display names  
+✅ **Timeout Protection** - 15-second timeout prevents hanging on unresponsive servers  
 ✅ **JSON Storage** - Lightweight storage with no database required  
 ✅ **Error Handling** - Comprehensive error handling and user feedback  
 ✅ **Bedrock Support** - Works with Floodgate for Bedrock Edition players
@@ -162,8 +164,10 @@ Edit `data/servers.json` to map Discord servers to Minecraft servers:
 - `rconHost` - Server IP address or hostname
 - `rconPort` - RCON port (usually 25575)
 - `rconPassword` - RCON password from server.properties
-- `whitelistCommandJava` - Command template for Java (use `{username}` or `{uuid}`)
-- `whitelistCommandBedrock` - Command template for Bedrock (use `{gamertag}`)
+- `whitelistCommandJava` - Command template for Java whitelist add (use `{username}` or `{uuid}`)
+- `whitelistCommandBedrock` - Command template for Bedrock whitelist add (use `{gamertag}`)
+- `whitelistRemoveCommandJava` - *(Optional)* Command for Java whitelist remove (defaults to `whitelist remove {username}`)
+- `whitelistRemoveCommandBedrock` - *(Optional)* Command for Bedrock whitelist remove (defaults to `fwhitelist remove {gamertag}`)
 
 **Getting Your Discord Server ID:**
 1. Enable Developer Mode in Discord: User Settings → Advanced → Developer Mode
@@ -210,43 +214,55 @@ You should see:
 
 ### Using Slash Commands
 
-The bot will show you a dropdown with available servers based on your Discord server's configuration.
+The bot uses a unified `/whitelist` command with subcommands for adding and removing.
 
-#### Java Edition
+#### Adding to Whitelist
 
+**Java Edition:**
 ```
-/whitelist java server:[Select from dropdown] username:Notch
+/whitelist add java server:[Select from dropdown] username:Notch
+```
+
+**Bedrock Edition:**
+```
+/whitelist add bedrock server:[Select from dropdown] gamertag:BedrockPlayer
 ```
 
 The bot will:
 1. Show available Minecraft servers for your Discord server
-2. Validate the username format
-3. Query Mojang API to get the UUID
+2. Validate the username/gamertag format
+3. For Java: Query Mojang API to get the UUID
 4. Check if user already has an entry on that specific server
 5. Send whitelist command to the selected server
 6. Save the data to `users.json`
 
-#### Bedrock Edition
+#### Removing from Whitelist
 
+**Java Edition:**
 ```
-/whitelist bedrock server:[Select from dropdown] gamertag:BedrockPlayer
+/whitelist remove java server:[Select from dropdown]
+```
+
+**Bedrock Edition:**
+```
+/whitelist remove bedrock server:[Select from dropdown]
 ```
 
 The bot will:
 1. Show available Minecraft servers for your Discord server
-2. Validate the gamertag format
-3. Check if user already has an entry on that specific server
-4. Send Floodgate whitelist command to the selected server
-5. Save the data to `users.json`
+2. Verify you are whitelisted on the selected server with the matching platform
+3. Send remove command to the selected server
+4. Remove your entry from `users.json` for that server
 
 ### Example Scenarios
 
 **Scenario 1: One Discord, Multiple Minecraft Servers**
 - You have a Discord server managing both Survival and Creative
 - Users can whitelist on either or both servers independently
-- User runs `/whitelist java server:Survival username:Steve`
-- Later, same user runs `/whitelist java server:Creative username:Steve`
+- User runs `/whitelist add java server:Survival username:Steve`
+- Later, same user runs `/whitelist add java server:Creative username:Steve`
 - User is now whitelisted on both with the same username
+- User can run `/whitelist remove java server:Survival` to remove from just that server
 
 **Scenario 2: Multiple Discord Servers**
 - Discord Server 1 manages Survival and Creative
@@ -254,12 +270,6 @@ The bot will:
 - Users in Server 1 only see Survival and Creative options
 - Users in Server 2 only see Modded server option
 - Same bot manages all configurations
-
-The bot will:
-1. Validate the gamertag format
-2. Check if user already has an entry
-3. Send Floodgate whitelist command to all servers
-4. Save the data to `users.json`
 
 ## Data Storage
 

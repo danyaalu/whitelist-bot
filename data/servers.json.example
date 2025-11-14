@@ -16,7 +16,9 @@
       "rconPort": 25575,
       "rconPassword": "your_password_here",
       "whitelistCommandJava": "whitelist add {username}",
-      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}",
+      "whitelistRemoveCommandJava": "whitelist remove {username}",
+      "whitelistRemoveCommandBedrock": "fwhitelist remove {gamertag}"
     },
     "s2": {
       "displayName": "Creative Server",
@@ -24,7 +26,9 @@
       "rconPort": 25575,
       "rconPassword": "another_password",
       "whitelistCommandJava": "whitelist add {username}",
-      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}",
+      "whitelistRemoveCommandJava": "whitelist remove {username}",
+      "whitelistRemoveCommandBedrock": "fwhitelist remove {gamertag}"
     },
     "s3": {
       "displayName": "Modded Server",
@@ -32,7 +36,9 @@
       "rconPort": 25575,
       "rconPassword": "modded_password",
       "whitelistCommandJava": "whitelist add {username}",
-      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}",
+      "whitelistRemoveCommandJava": "whitelist remove {username}",
+      "whitelistRemoveCommandBedrock": "fwhitelist remove {gamertag}"
     }
   }
 }
