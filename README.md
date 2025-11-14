@@ -4,11 +4,13 @@ A production-ready Discord bot for managing Minecraft server whitelists via RCON
 
 ## Features
 
-✅ **Slash Commands** - Modern Discord slash commands (`/whitelist java` and `/whitelist bedrock`)  
+✅ **Slash Commands** - Modern Discord slash commands with server selection  
+✅ **Multi-Discord Server Support** - One bot can manage whitelists for multiple Discord communities  
+✅ **Per-Server Configuration** - Each Discord server can manage different Minecraft servers  
 ✅ **Mojang API Validation** - Validates Java Edition usernames and fetches UUIDs  
-✅ **Multi-Server Support** - Apply whitelist to multiple servers simultaneously  
 ✅ **RCON Integration** - Sends whitelist commands directly to your Minecraft servers  
-✅ **Duplicate Prevention** - Prevents users from linking multiple accounts  
+✅ **Per-Server Whitelisting** - Users can be whitelisted on different servers independently  
+✅ **Autocomplete** - Server selection with user-friendly display names  
 ✅ **JSON Storage** - Lightweight storage with no database required  
 ✅ **Error Handling** - Comprehensive error handling and user feedback  
 ✅ **Bedrock Support** - Works with Floodgate for Bedrock Edition players
@@ -104,33 +106,69 @@ GUILD_ID=your_test_server_id_here
 
 ### Step 6: Configure Servers
 
-Edit `data/servers.json` with your Minecraft server details:
+Edit `data/servers.json` to map Discord servers to Minecraft servers:
 
 ```json
 {
-  "main_server": {
-    "rconHost": "127.0.0.1",
-    "rconPort": 25575,
-    "rconPassword": "your_rcon_password_here",
-    "whitelistCommandJava": "whitelist add {username}",
-    "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+  "discordServers": {
+    "123456789012345678": {
+      "name": "My Main Discord",
+      "minecraftServers": ["survival", "creative"]
+    },
+    "987654321098765432": {
+      "name": "Modded Community",
+      "minecraftServers": ["modded"]
+    }
   },
-  "survival_server": {
-    "rconHost": "192.168.1.100",
-    "rconPort": 25575,
-    "rconPassword": "another_password",
-    "whitelistCommandJava": "whitelist add {username}",
-    "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+  "minecraftServers": {
+    "survival": {
+      "displayName": "Survival Server",
+      "rconHost": "127.0.0.1",
+      "rconPort": 25575,
+      "rconPassword": "your_password_here",
+      "whitelistCommandJava": "whitelist add {username}",
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+    },
+    "creative": {
+      "displayName": "Creative Server",
+      "rconHost": "192.168.1.100",
+      "rconPort": 25575,
+      "rconPassword": "another_password",
+      "whitelistCommandJava": "whitelist add {username}",
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+    },
+    "modded": {
+      "displayName": "Modded Server",
+      "rconHost": "192.168.1.101",
+      "rconPort": 25575,
+      "rconPassword": "modded_password",
+      "whitelistCommandJava": "whitelist add {username}",
+      "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+    }
   }
 }
 ```
 
-**Configuration Options:**
+**Configuration Structure:**
+
+**Discord Servers Section:**
+- Key: Discord server/guild ID (right-click server → Copy Server ID with Developer Mode enabled)
+- `name` - Friendly name for your reference
+- `minecraftServers` - Array of Minecraft server IDs this Discord can manage
+
+**Minecraft Servers Section:**
+- Key: Unique server ID (used internally, e.g., "survival", "s1", "main")
+- `displayName` - User-friendly name shown in Discord
 - `rconHost` - Server IP address or hostname
 - `rconPort` - RCON port (usually 25575)
 - `rconPassword` - RCON password from server.properties
 - `whitelistCommandJava` - Command template for Java (use `{username}` or `{uuid}`)
 - `whitelistCommandBedrock` - Command template for Bedrock (use `{gamertag}`)
+
+**Getting Your Discord Server ID:**
+1. Enable Developer Mode in Discord: User Settings → Advanced → Developer Mode
+2. Right-click your Discord server icon → Copy Server ID
+3. Paste the ID into servers.json
 
 **Note:** For Bedrock support, you need [Floodgate](https://geysermc.org/download#floodgate) installed on your server.
 
@@ -164,7 +202,7 @@ You should see:
 ```
 ✅ Loaded command: whitelist
 ✅ Logged in as YourBot#1234
-✅ Loaded 2 server(s) from servers.json
+✅ Loaded 2 Discord server(s) and 3 Minecraft server(s)
 ✅ Created users.json
 ✅ All configuration files loaded successfully
 ✅ Successfully registered 1 application (/) commands
@@ -172,24 +210,50 @@ You should see:
 
 ### Using Slash Commands
 
+The bot will show you a dropdown with available servers based on your Discord server's configuration.
+
 #### Java Edition
 
 ```
-/whitelist java username:Notch
+/whitelist java server:[Select from dropdown] username:Notch
 ```
 
 The bot will:
-1. Validate the username format
-2. Query Mojang API to get the UUID
-3. Check if user already has an entry
-4. Send whitelist command to all servers
-5. Save the data to `users.json`
+1. Show available Minecraft servers for your Discord server
+2. Validate the username format
+3. Query Mojang API to get the UUID
+4. Check if user already has an entry on that specific server
+5. Send whitelist command to the selected server
+6. Save the data to `users.json`
 
 #### Bedrock Edition
 
 ```
-/whitelist bedrock gamertag:BedrockPlayer
+/whitelist bedrock server:[Select from dropdown] gamertag:BedrockPlayer
 ```
+
+The bot will:
+1. Show available Minecraft servers for your Discord server
+2. Validate the gamertag format
+3. Check if user already has an entry on that specific server
+4. Send Floodgate whitelist command to the selected server
+5. Save the data to `users.json`
+
+### Example Scenarios
+
+**Scenario 1: One Discord, Multiple Minecraft Servers**
+- You have a Discord server managing both Survival and Creative
+- Users can whitelist on either or both servers independently
+- User runs `/whitelist java server:Survival username:Steve`
+- Later, same user runs `/whitelist java server:Creative username:Steve`
+- User is now whitelisted on both with the same username
+
+**Scenario 2: Multiple Discord Servers**
+- Discord Server 1 manages Survival and Creative
+- Discord Server 2 manages a Modded server
+- Users in Server 1 only see Survival and Creative options
+- Users in Server 2 only see Modded server option
+- Same bot manages all configurations
 
 The bot will:
 1. Validate the gamertag format
@@ -201,44 +265,68 @@ The bot will:
 
 ### users.json Format
 
+Users can now be whitelisted on multiple servers:
+
 ```json
 {
   "123456789012345678": {
-    "platform": "java",
-    "username": "Notch",
-    "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+    "servers": {
+      "survival": {
+        "platform": "java",
+        "username": "Notch",
+        "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+        "whitelistedAt": "2025-11-14T00:00:00.000Z"
+      },
+      "creative": {
+        "platform": "java",
+        "username": "Notch",
+        "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+        "whitelistedAt": "2025-11-14T00:05:00.000Z"
+      }
+    }
   },
   "987654321098765432": {
-    "platform": "bedrock",
-    "username": "BedrockPlayer",
-    "uuid": null
+    "servers": {
+      "modded": {
+        "platform": "bedrock",
+        "username": "BedrockPlayer",
+        "uuid": null,
+        "whitelistedAt": "2025-11-14T00:10:00.000Z"
+      }
+    }
   }
 }
 ```
 
-- **Key:** Discord User ID
-- **platform:** "java" or "bedrock"
-- **username:** Minecraft username/gamertag
-- **uuid:** Player UUID (Java only, null for Bedrock)
+**Structure:**
+- **Top Level Key:** Discord User ID
+- **servers:** Object containing server-specific whitelist entries
+  - **Key:** Minecraft server ID (from servers.json)
+  - **platform:** "java" or "bedrock"
+  - **username:** Minecraft username/gamertag
+  - **uuid:** Player UUID (Java only, null for Bedrock)
+  - **whitelistedAt:** ISO timestamp of when user was whitelisted
 
 ## How It Works
 
 ### Command Flow
 
 ```
-User runs /whitelist java <username>
+User runs /whitelist java server:<selected> username:<name>
+         ↓
+Verify Discord server has access to selected Minecraft server
          ↓
 Validate username format
          ↓
 Query Mojang API for UUID
          ↓
-Check for existing entry
+Check if user already whitelisted on that specific server
          ↓
-Connect to each server via RCON
+Connect to selected server via RCON
          ↓
 Send whitelist command
          ↓
-Save to users.json
+Save to users.json (per-server entry)
          ↓
 Send success/error message
 ```

@@ -1,5 +1,6 @@
 node_modules/
 .env
-users.json
+data/users.json
+data/servers.json
 *.log
 .DS_Store

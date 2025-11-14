@@ -34,29 +34,54 @@ class FileManager {
   async loadServers() {
     try {
       const data = await fs.readFile(this.serversFilePath, 'utf8');
-      const servers = JSON.parse(data);
+      const config = JSON.parse(data);
       
-      // Validate server configuration
-      if (Object.keys(servers).length === 0) {
-        throw new Error('servers.json is empty');
+      // Validate new structure
+      if (!config.discordServers || !config.minecraftServers) {
+        throw new Error('servers.json must contain "discordServers" and "minecraftServers" sections');
       }
       
-      // Validate each server has required fields
-      for (const [serverName, config] of Object.entries(servers)) {
-        if (!config.rconHost || config.rconPort === undefined || config.rconPassword === undefined) {
+      // Validate Discord servers
+      if (Object.keys(config.discordServers).length === 0) {
+        throw new Error('No Discord servers configured in servers.json');
+      }
+      
+      // Validate Minecraft servers
+      if (Object.keys(config.minecraftServers).length === 0) {
+        throw new Error('No Minecraft servers configured in servers.json');
+      }
+      
+      // Validate each Minecraft server has required fields
+      for (const [serverId, serverConfig] of Object.entries(config.minecraftServers)) {
+        if (!serverConfig.rconHost || serverConfig.rconPort === undefined || serverConfig.rconPassword === undefined) {
           const missing = [];
-          if (!config.rconHost) missing.push('rconHost');
-          if (config.rconPort === undefined) missing.push('rconPort');
-          if (config.rconPassword === undefined) missing.push('rconPassword');
-          throw new Error(`Server "${serverName}" is missing required RCON configuration: ${missing.join(', ')}`);
+          if (!serverConfig.rconHost) missing.push('rconHost');
+          if (serverConfig.rconPort === undefined) missing.push('rconPort');
+          if (serverConfig.rconPassword === undefined) missing.push('rconPassword');
+          throw new Error(`Minecraft server "${serverId}" is missing required RCON configuration: ${missing.join(', ')}`);
         }
-        if (!config.whitelistCommandJava || !config.whitelistCommandBedrock) {
-          throw new Error(`Server "${serverName}" is missing whitelist command configuration`);
+        if (!serverConfig.whitelistCommandJava || !serverConfig.whitelistCommandBedrock) {
+          throw new Error(`Minecraft server "${serverId}" is missing whitelist command configuration`);
+        }
+        if (!serverConfig.displayName) {
+          throw new Error(`Minecraft server "${serverId}" is missing displayName`);
         }
       }
       
-      console.log(`✅ Loaded ${Object.keys(servers).length} server(s) from servers.json`);
-      return servers;
+      // Validate Discord server mappings reference valid Minecraft servers
+      for (const [discordId, discordConfig] of Object.entries(config.discordServers)) {
+        if (!discordConfig.minecraftServers || !Array.isArray(discordConfig.minecraftServers)) {
+          throw new Error(`Discord server "${discordId}" must have a "minecraftServers" array`);
+        }
+        for (const mcServerId of discordConfig.minecraftServers) {
+          if (!config.minecraftServers[mcServerId]) {
+            throw new Error(`Discord server "${discordId}" references unknown Minecraft server "${mcServerId}"`);
+          }
+        }
+      }
+      
+      console.log(`✅ Loaded ${Object.keys(config.discordServers).length} Discord server(s) and ${Object.keys(config.minecraftServers).length} Minecraft server(s)`);
+      return config;
     } catch (error) {
       if (error.code === 'ENOENT') {
         throw new Error('servers.json not found! Please create it with your server configuration.');
@@ -79,31 +104,59 @@ class FileManager {
   }
 
   /**
-   * Check if a Discord user already has a whitelist entry
+   * Check if a Discord user already has a whitelist entry for a specific server
    * @param {Object} users - Users data
    * @param {string} discordUserId - Discord user ID
+   * @param {string} serverId - Minecraft server ID
    * @returns {boolean}
    */
-  userExists(users, discordUserId) {
-    return users.hasOwnProperty(discordUserId);
+  userExistsOnServer(users, discordUserId, serverId) {
+    return users[discordUserId] && users[discordUserId].servers && users[discordUserId].servers[serverId];
   }
 
   /**
-   * Add or update a user entry
+   * Add or update a user entry for a specific server
    * @param {Object} users - Users data
    * @param {string} discordUserId - Discord user ID
+   * @param {string} serverId - Minecraft server ID
    * @param {string} platform - "java" or "bedrock"
    * @param {string} username - Minecraft username
    * @param {string|null} uuid - UUID for Java, null for Bedrock
    * @returns {Object} Updated users data
    */
-  addUser(users, discordUserId, platform, username, uuid = null) {
-    users[discordUserId] = {
+  addUserToServer(users, discordUserId, serverId, platform, username, uuid = null) {
+    if (!users[discordUserId]) {
+      users[discordUserId] = {
+        servers: {}
+      };
+    }
+    
+    if (!users[discordUserId].servers) {
+      users[discordUserId].servers = {};
+    }
+    
+    users[discordUserId].servers[serverId] = {
       platform,
       username,
-      uuid
+      uuid,
+      whitelistedAt: new Date().toISOString()
     };
+    
     return users;
+  }
+
+  /**
+   * Get available Minecraft servers for a Discord guild
+   * @param {Object} serversConfig - Server configuration
+   * @param {string} guildId - Discord guild ID
+   * @returns {Array} Array of available Minecraft server IDs
+   */
+  getAvailableServers(serversConfig, guildId) {
+    const discordServer = serversConfig.discordServers[guildId];
+    if (!discordServer) {
+      return [];
+    }
+    return discordServer.minecraftServers || [];
   }
 
   /**

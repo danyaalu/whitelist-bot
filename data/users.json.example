@@ -1,12 +1,28 @@
 {
   "123456789012345678": {
-    "platform": "java",
-    "username": "Notch",
-    "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5"
+    "servers": {
+      "s1": {
+        "platform": "java",
+        "username": "Notch",
+        "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+        "whitelistedAt": "2025-11-14T00:00:00.000Z"
+      },
+      "s2": {
+        "platform": "java",
+        "username": "Notch",
+        "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+        "whitelistedAt": "2025-11-14T00:05:00.000Z"
+      }
+    }
   },
   "987654321098765432": {
-    "platform": "bedrock",
-    "username": "BedrockPlayer",
-    "uuid": null
+    "servers": {
+      "s3": {
+        "platform": "bedrock",
+        "username": "BedrockPlayer",
+        "uuid": null,
+        "whitelistedAt": "2025-11-14T00:10:00.000Z"
+      }
+    }
   }
 }

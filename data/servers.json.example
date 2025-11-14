@@ -1,7 +1,7 @@
 {
   "discordServers": {
-    "1438678148571988172": {
-      "name": "danyaal's server 1",
+    "123456789012345678": {
+      "name": "Discord Server 1",
       "minecraftServers": ["s1", "s2"]
     },
     "987654321098765432": {
@@ -11,10 +11,10 @@
   },
   "minecraftServers": {
     "s1": {
-      "displayName": "LMaSMP",
+      "displayName": "Survival Server",
       "rconHost": "127.0.0.1",
       "rconPort": 25575,
-      "rconPassword": "hello",
+      "rconPassword": "your_password_here",
       "whitelistCommandJava": "whitelist add {username}",
       "whitelistCommandBedrock": "fwhitelist add {gamertag}"
     },

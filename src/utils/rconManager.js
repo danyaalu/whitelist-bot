@@ -44,6 +44,30 @@ class RconManager {
   }
 
   /**
+   * Execute whitelist command on a specific server
+   * @param {Object} serverConfig - Minecraft server configuration
+   * @param {string} serverId - Server ID for logging
+   * @param {string} platform - "java" or "bedrock"
+   * @param {string} username - Username or gamertag
+   * @param {string|null} uuid - UUID (Java only)
+   * @returns {Promise<Object>} Result from server
+   */
+  async whitelistOnServer(serverConfig, serverId, platform, username, uuid = null) {
+    // Build command based on platform
+    let command;
+    if (platform === 'java') {
+      command = serverConfig.whitelistCommandJava
+        .replace('{uuid}', uuid || username)
+        .replace('{username}', username);
+    } else {
+      command = serverConfig.whitelistCommandBedrock.replace('{gamertag}', username);
+    }
+    
+    const result = await this.executeCommand(serverConfig, command, serverId);
+    return result;
+  }
+
+  /**
    * Execute whitelist command on all configured servers
    * @param {Object} servers - All server configurations
    * @param {string} platform - "java" or "bedrock"
@@ -70,6 +94,20 @@ class RconManager {
     }
     
     return results;
+  }
+
+  /**
+   * Format result into a user-friendly message
+   * @param {Object} result - Result from server
+   * @param {string} displayName - Display name of server
+   * @returns {string} Formatted message
+   */
+  formatResult(result, displayName) {
+    if (result.success) {
+      return `✅ Successfully whitelisted on **${displayName}**`;
+    } else {
+      return `❌ Failed to whitelist on **${displayName}**: ${result.error}`;
+    }
   }
 
   /**
