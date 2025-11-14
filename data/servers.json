@@ -1,0 +1,9 @@
+{
+  "main_server": {
+    "rconHost": "127.0.0.1",
+    "rconPort": 25575,
+    "rconPassword": "hello",
+    "whitelistCommandJava": "whitelist add {username}",
+    "whitelistCommandBedrock": "fwhitelist add {gamertag}"
+  }
+}
