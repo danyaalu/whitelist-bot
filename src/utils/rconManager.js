@@ -102,6 +102,44 @@ class RconManager {
     }
     
     const result = await this.executeCommand(serverConfig, command, serverId);
+    
+    // Check if the response indicates an error
+    if (result.success && result.response) {
+      const response = result.response.toLowerCase();
+      
+      // Check for common error patterns in the response
+      if (response.includes('unknown') || 
+          response.includes('usage:') ||
+          response.includes('error') ||
+          response.includes('failed') ||
+          response.includes('invalid') ||
+          response.includes('not found')) {
+        
+        // Clean up the error message
+        let errorMsg = result.response.trim();
+        
+        // Remove Minecraft formatting markers (like <--[HERE])
+        errorMsg = errorMsg.replace(/<--\[HERE\]/g, '');
+        
+        // Extract the most relevant part of the error
+        if (errorMsg.toLowerCase().includes('unknown')) {
+          if (platform === 'bedrock') {
+            errorMsg = 'Server does not support Bedrock players. Floodgate may not be installed.';
+          } else {
+            errorMsg = 'Unknown command. Please check your server configuration.';
+          }
+        } else if (errorMsg.toLowerCase().includes('usage:')) {
+          errorMsg = 'Invalid command syntax. Please check your whitelist command configuration.';
+        }
+        
+        return {
+          success: false,
+          serverName: serverId,
+          error: errorMsg
+        };
+      }
+    }
+    
     return result;
   }
 
