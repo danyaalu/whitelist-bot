@@ -82,24 +82,49 @@ class RconManager {
   }
 
   /**
-   * Execute whitelist command on a specific server
+   * Execute a whitelist command (add or remove) on a specific server
    * @param {Object} serverConfig - Minecraft server configuration
    * @param {string} serverId - Server ID for logging
+   * @param {'add'|'remove'} action - The action to perform
    * @param {string} platform - "java" or "bedrock"
    * @param {string} username - Username or gamertag
-   * @param {string|null} uuid - UUID (Java only)
+   * @param {string|null} uuid - UUID (Java only, stored for record-keeping but not used in commands)
    * @returns {Promise<Object>} Result from server
    */
-  async whitelistOnServer(serverConfig, serverId, platform, username, uuid = null) {
-    // Build command based on platform
-    let command;
-    if (platform === 'java') {
-      command = serverConfig.whitelistCommandJava
-        .replace('{uuid}', uuid || username)
-        .replace('{username}', username);
-    } else {
-      command = serverConfig.whitelistCommandBedrock.replace('{gamertag}', username);
+  async executeWhitelistCommand(serverConfig, serverId, action, platform, username, uuid = null) {
+    // Get the appropriate command template with defaults
+    let commandTemplate;
+    if (action === 'add') {
+      commandTemplate = platform === 'java' 
+        ? serverConfig.whitelistCommandJava 
+        : serverConfig.whitelistCommandBedrock;
+    } else { // action === 'remove'
+      // Use configured remove command or default to standard Minecraft commands
+      if (platform === 'java') {
+        commandTemplate = serverConfig.whitelistRemoveCommandJava || 'whitelist remove {username}';
+      } else {
+        commandTemplate = serverConfig.whitelistRemoveCommandBedrock || 'fwhitelist remove {gamertag}';
+      }
     }
+
+    if (!commandTemplate) {
+      return {
+        success: false,
+        serverName: serverId,
+        error: `${action} command for ${platform} is not configured for this server.`
+      };
+    }
+
+    // Build command with placeholders
+    // NOTE: For Java Edition, we always use {username} instead of {uuid} because:
+    // 1. Vanilla Minecraft's whitelist command accepts usernames
+    // 2. Online-mode servers will automatically resolve to Mojang UUIDs
+    // 3. Offline-mode servers generate different UUIDs, so using Mojang UUIDs would fail
+    // The UUID is fetched and stored for validation and record-keeping only
+    const command = commandTemplate
+      .replace('{uuid}', username)  // Always use username even if {uuid} placeholder is used
+      .replace('{username}', username)
+      .replace('{gamertag}', username);
     
     const result = await this.executeCommand(serverConfig, command, serverId);
     
@@ -144,32 +169,16 @@ class RconManager {
   }
 
   /**
-   * Execute whitelist command on all configured servers
-   * @param {Object} servers - All server configurations
+   * Execute whitelist add command on a specific server (legacy compatibility)
+   * @param {Object} serverConfig - Minecraft server configuration
+   * @param {string} serverId - Server ID for logging
    * @param {string} platform - "java" or "bedrock"
    * @param {string} username - Username or gamertag
    * @param {string|null} uuid - UUID (Java only)
-   * @returns {Promise<Array>} Results from all servers
+   * @returns {Promise<Object>} Result from server
    */
-  async whitelistOnAllServers(servers, platform, username, uuid = null) {
-    const results = [];
-    
-    for (const [serverName, config] of Object.entries(servers)) {
-      // Build command based on platform
-      let command;
-      if (platform === 'java') {
-        command = config.whitelistCommandJava
-          .replace('{uuid}', uuid || username)
-          .replace('{username}', username);
-      } else {
-        command = config.whitelistCommandBedrock.replace('{gamertag}', username);
-      }
-      
-      const result = await this.executeCommand(config, command, serverName);
-      results.push(result);
-    }
-    
-    return results;
+  async whitelistOnServer(serverConfig, serverId, platform, username, uuid = null) {
+    return this.executeWhitelistCommand(serverConfig, serverId, 'add', platform, username, uuid);
   }
 
   /**

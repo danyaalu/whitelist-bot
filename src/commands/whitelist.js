@@ -307,13 +307,14 @@ module.exports = {
       content: `⏳ Removing **${username}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
-    // Build remove command
-    const removeCommand = serverConfig.whitelistRemoveCommandJava || 'whitelist remove {username}';
-    const command = removeCommand
-      .replace('{uuid}', userEntry.uuid || username)
-      .replace('{username}', username);
-
-    const result = await rconManager.executeCommand(serverConfig, command, serverId);
+    const result = await rconManager.executeWhitelistCommand(
+      serverConfig,
+      serverId,
+      'remove',
+      'java',
+      username,
+      userEntry.uuid
+    );
 
     if (result.success) {
       // Remove from users.json
@@ -350,11 +351,14 @@ module.exports = {
       content: `⏳ Removing **${gamertag}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
-    // Build remove command
-    const removeCommand = serverConfig.whitelistRemoveCommandBedrock || 'fwhitelist remove {gamertag}';
-    const command = removeCommand.replace('{gamertag}', gamertag);
-
-    const result = await rconManager.executeCommand(serverConfig, command, serverId);
+    const result = await rconManager.executeWhitelistCommand(
+      serverConfig,
+      serverId,
+      'remove',
+      'bedrock',
+      gamertag,
+      null
+    );
 
     if (result.success) {
       // Remove from users.json

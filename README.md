@@ -176,6 +176,39 @@ Edit `data/servers.json` to map Discord servers to Minecraft servers:
 
 **Note:** For Bedrock support, you need [Floodgate](https://geysermc.org/download#floodgate) installed on your server.
 
+### Important: Online Mode vs Offline Mode
+
+**This bot supports both online-mode and offline-mode servers!**
+
+**How it works:**
+- The bot validates Java Edition usernames against the Mojang API (to verify they exist)
+- The bot fetches and stores UUIDs for record-keeping purposes
+- **However, the bot uses `{username}` in whitelist commands, NOT `{uuid}`**
+
+**Why this matters:**
+- **Online-mode servers:** Authenticate with Mojang, use official Mojang UUIDs
+- **Offline-mode servers:** Don't authenticate, generate their own UUIDs based on username
+- **Using `{username}`:** Works for both! Minecraft's `whitelist add` command accepts usernames and resolves them correctly based on the server's mode
+
+**Command Template Guidelines:**
+
+✅ **Recommended (works for both modes):**
+```json
+"whitelistCommandJava": "whitelist add {username}",
+"whitelistRemoveCommandJava": "whitelist remove {username}"
+```
+
+❌ **Not recommended (only works for online-mode):**
+```json
+"whitelistCommandJava": "whitelist add {uuid}",
+"whitelistRemoveCommandJava": "whitelist remove {uuid}"
+```
+
+**What about the UUID?**
+- The UUID from Mojang is stored in `users.json` for validation and record-keeping
+- It's NOT used in the actual RCON whitelist commands
+- This allows the same bot to work with both online-mode and offline-mode servers
+
 ### Step 7: Enable RCON on Your Minecraft Server
 
 Edit your `server.properties`:
