@@ -2,11 +2,13 @@
   "discordServers": {
     "1438678148571988172": {
       "name": "danyaal's server",
-      "minecraftServers": ["s1", "s2"]
+      "minecraftServers": ["s1", "s2"],
+      "requiredRoles": ["1441782207621366021"]
     },
     "1438887356689158156": {
       "name": "danyaal's server 1",
-      "minecraftServers": ["s3"]
+      "minecraftServers": ["s3"],
+      "requiredRoles": []
     }
   },
   "minecraftServers": {

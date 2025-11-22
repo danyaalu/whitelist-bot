@@ -157,6 +157,7 @@ Edit `data/servers.json` to map Discord servers to Minecraft servers:
 - Key: Discord server/guild ID (right-click server → Copy Server ID with Developer Mode enabled)
 - `name` - Friendly name for your reference
 - `minecraftServers` - Array of Minecraft server IDs this Discord can manage
+- `requiredRoles` - *(Optional)* Array of Discord role IDs required to use the whitelist command. If empty or not specified, everyone can use it. Users need at least ONE of the specified roles.
 
 **Minecraft Servers Section:**
 - Key: Unique server ID (used internally, e.g., "survival", "s1", "main")
@@ -173,6 +174,26 @@ Edit `data/servers.json` to map Discord servers to Minecraft servers:
 1. Enable Developer Mode in Discord: User Settings → Advanced → Developer Mode
 2. Right-click your Discord server icon → Copy Server ID
 3. Paste the ID into servers.json
+
+**Getting Discord Role IDs (for requiredRoles):**
+1. Enable Developer Mode in Discord: User Settings → Advanced → Developer Mode
+2. Go to Server Settings → Roles
+3. Right-click a role → Copy Role ID
+4. Add the role ID(s) to the `requiredRoles` array in servers.json
+
+**Example with role restrictions:**
+```json
+{
+  "discordServers": {
+    "123456789012345678": {
+      "name": "My Discord",
+      "minecraftServers": ["survival"],
+      "requiredRoles": ["111111111111111111", "222222222222222222"]
+    }
+  }
+}
+```
+In this example, users need either role `111111111111111111` OR role `222222222222222222` to use the whitelist command.
 
 **Note:** For Bedrock support, you need [Floodgate](https://geysermc.org/download#floodgate) installed on your server.
 

@@ -2,11 +2,13 @@
   "discordServers": {
     "123456789012345678": {
       "name": "Discord Server 1",
-      "minecraftServers": ["s1", "s2"]
+      "minecraftServers": ["s1", "s2"],
+      "requiredRoles": []
     },
     "987654321098765432": {
       "name": "Discord Server 2",
-      "minecraftServers": ["s3"]
+      "minecraftServers": ["s3"],
+      "requiredRoles": ["111111111111111111", "222222222222222222"]
     }
   },
   "minecraftServers": {

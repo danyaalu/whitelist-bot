@@ -119,6 +119,21 @@ module.exports = {
       const discordUserId = interaction.user.id;
       const guildId = interaction.guildId;
 
+      // Check if user has required roles
+      const discordServerConfig = serversConfig.discordServers[guildId];
+      if (discordServerConfig && discordServerConfig.requiredRoles && discordServerConfig.requiredRoles.length > 0) {
+        const member = interaction.member;
+        const hasRequiredRole = discordServerConfig.requiredRoles.some(roleId => 
+          member.roles.cache.has(roleId)
+        );
+        
+        if (!hasRequiredRole) {
+          return await interaction.editReply({
+            content: '❌ You do not have permission to use this command. You need one of the required roles.',
+          });
+        }
+      }
+
       // Validate that this Discord server has access to the selected Minecraft server
       const availableServers = fileManager.getAvailableServers(serversConfig, guildId);
       
