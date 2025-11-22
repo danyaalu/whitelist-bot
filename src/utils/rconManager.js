@@ -182,6 +182,38 @@ class RconManager {
   }
 
   /**
+   * Execute a kick command on a specific server
+   * @param {Object} serverConfig - Minecraft server configuration
+   * @param {string} serverId - Server ID for logging
+   * @param {string} platform - "java" or "bedrock"
+   * @param {string} username - Username or gamertag to kick
+   * @returns {Promise<Object>} Result from server
+   */
+  async executeKickCommand(serverConfig, serverId, platform, username) {
+    // For Bedrock players, add '.' prefix
+    const playerName = platform === 'bedrock' ? `.${username}` : username;
+    
+    // Construct kick command with custom message
+    const kickCommand = `kick ${playerName} You have been removed from the whitelist`;
+    
+    console.log(`[${serverId}] Executing kick command for ${platform}: ${kickCommand}`);
+    
+    // Execute the kick command (ignore if it fails, player might not be online)
+    try {
+      const result = await this.executeCommand(serverConfig, kickCommand, serverId);
+      if (result.success) {
+        console.log(`[${serverId}] Successfully kicked ${playerName}. Response: ${result.response}`);
+      } else {
+        console.log(`[${serverId}] Failed to kick ${playerName} (player might not be online): ${result.error}`);
+      }
+      return result;
+    } catch (error) {
+      console.log(`[${serverId}] Error kicking ${playerName}: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Format result into a user-friendly message
    * @param {Object} result - Result from server
    * @param {string} displayName - Display name of server

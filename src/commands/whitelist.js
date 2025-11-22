@@ -322,6 +322,15 @@ module.exports = {
       content: `⏳ Removing **${username}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
+    // Kick the player from the server FIRST (while they're still whitelisted)
+    await rconManager.executeKickCommand(
+      serverConfig,
+      serverId,
+      'java',
+      username
+    );
+
+    // Then remove from whitelist
     const result = await rconManager.executeWhitelistCommand(
       serverConfig,
       serverId,
@@ -366,6 +375,15 @@ module.exports = {
       content: `⏳ Removing **${gamertag}** from **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
+    // Kick the player from the server FIRST (while they're still whitelisted)
+    await rconManager.executeKickCommand(
+      serverConfig,
+      serverId,
+      'bedrock',
+      gamertag
+    );
+
+    // Then remove from whitelist
     const result = await rconManager.executeWhitelistCommand(
       serverConfig,
       serverId,
