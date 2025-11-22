@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const logger = require('./logger');
 
 class FileManager {
   constructor() {
@@ -20,7 +21,7 @@ class FileManager {
         // File doesn't exist, create it with empty object
         await this.ensureDataDirectory();
         await fs.writeFile(this.usersFilePath, '{}', 'utf8');
-        console.log('✅ Created users.json');
+        logger.log('✅ Created users.json');
         return {};
       }
       throw new Error(`Failed to load users.json: ${error.message}`);
@@ -80,7 +81,7 @@ class FileManager {
         }
       }
       
-      console.log(`✅ Loaded ${Object.keys(config.discordServers).length} Discord server(s) and ${Object.keys(config.minecraftServers).length} Minecraft server(s)`);
+      logger.log(`✅ Loaded ${Object.keys(config.discordServers).length} Discord server(s) and ${Object.keys(config.minecraftServers).length} Minecraft server(s)`);
       return config;
     } catch (error) {
       if (error.code === 'ENOENT') {

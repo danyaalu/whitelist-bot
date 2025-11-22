@@ -1,4 +1,5 @@
 const { Rcon } = require('rcon-client');
+const logger = require('./logger');
 
 class RconManager {
   constructor() {
@@ -196,19 +197,24 @@ class RconManager {
     // Construct kick command with custom message
     const kickCommand = `kick ${playerName} You have been removed from the whitelist`;
     
-    console.log(`[${serverId}] Executing kick command for ${platform}: ${kickCommand}`);
+    logger.log(`[${serverId}] Executing kick command for ${platform}: ${kickCommand}`);
     
     // Execute the kick command (ignore if it fails, player might not be online)
     try {
       const result = await this.executeCommand(serverConfig, kickCommand, serverId);
       if (result.success) {
-        console.log(`[${serverId}] Successfully kicked ${playerName}. Response: ${result.response}`);
+        // Check if player was actually found and kicked
+        if (result.response && result.response.includes('No player was found')) {
+          logger.warn(`[WARN] [${serverId}] Player ${playerName} not found (likely offline)`);
+        } else {
+          logger.success(`[SUCCESS] [${serverId}] Kicked ${playerName}. Response: ${result.response}`);
+        }
       } else {
-        console.log(`[${serverId}] Failed to kick ${playerName} (player might not be online): ${result.error}`);
+        logger.warn(`[WARN] [${serverId}] Failed to kick ${playerName} (player might not be online): ${result.error}`);
       }
       return result;
     } catch (error) {
-      console.log(`[${serverId}] Error kicking ${playerName}: ${error.message}`);
+      logger.error(`[ERROR] [${serverId}] Error kicking ${playerName}: ${error.message}`);
       return { success: false, error: error.message };
     }
   }

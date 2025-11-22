@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const fileManager = require('../utils/fileManager');
 const mojangApi = require('../utils/mojangApi');
 const rconManager = require('../utils/rconManager');
+const logger = require('../utils/logger');
 
 // Helper function to format platform name
 function formatPlatform(platform) {
@@ -254,6 +255,8 @@ module.exports = {
       users = fileManager.addUserToServer(users, discordUserId, serverId, 'java', mojangData.username, mojangData.uuid);
       await fileManager.saveUsers(users);
 
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${mojangData.username} to ${serverConfig.displayName} (Java Edition)`);
+
       await interaction.editReply({
         content: `✅ **Successfully whitelisted!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -261,6 +264,8 @@ module.exports = {
           `**Username:** ${mojangData.username}\n`,
       });
     } else {
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${mojangData.username} to ${serverConfig.displayName} (Java Edition): ${result.error}`);
+
       await interaction.editReply({
         content: `❌ **Failed to whitelist**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -298,6 +303,8 @@ module.exports = {
       users = fileManager.addUserToServer(users, discordUserId, serverId, 'bedrock', gamertag, null);
       await fileManager.saveUsers(users);
 
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${gamertag} to ${serverConfig.displayName} (Bedrock Edition)`);
+
       await interaction.editReply({
         content: `✅ **Successfully whitelisted!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -305,6 +312,8 @@ module.exports = {
           `**Gamertag:** ${gamertag}`,
       });
     } else {
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${gamertag} to ${serverConfig.displayName} (Bedrock Edition): ${result.error}`);
+
       await interaction.editReply({
         content: `❌ **Failed to whitelist**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -351,6 +360,8 @@ module.exports = {
       
       await fileManager.saveUsers(users);
 
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) removed ${username} from ${serverConfig.displayName} (Java Edition)`);
+
       await interaction.editReply({
         content: `✅ **Successfully removed from whitelist!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -358,6 +369,8 @@ module.exports = {
           `**Username:** ${username}`,
       });
     } else {
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to remove ${username} from ${serverConfig.displayName} (Java Edition): ${result.error}`);
+
       await interaction.editReply({
         content: `❌ **Failed to remove from whitelist**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -404,6 +417,8 @@ module.exports = {
       
       await fileManager.saveUsers(users);
 
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) removed ${gamertag} from ${serverConfig.displayName} (Bedrock Edition)`);
+
       await interaction.editReply({
         content: `✅ **Successfully removed from whitelist!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
@@ -411,6 +426,8 @@ module.exports = {
           `**Gamertag:** ${gamertag}`,
       });
     } else {
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to remove ${gamertag} from ${serverConfig.displayName} (Bedrock Edition): ${result.error}`);
+
       await interaction.editReply({
         content: `❌ **Failed to remove from whitelist**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
