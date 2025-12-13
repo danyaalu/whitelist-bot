@@ -6,6 +6,7 @@ const readline = require('readline');
 const fileManager = require('./src/utils/fileManager');
 const logger = require('./src/utils/logger');
 const commandLoader = require('./src/utils/commandLoader');
+const rconManager = require('./src/utils/rconManager');
 
 // Validate required environment variables
 if (!process.env.DISCORD_TOKEN) {
@@ -99,7 +100,22 @@ process.on('uncaughtException', error => {
 });
 
 // Login to Discord
-client.login(process.env.DISCORD_TOKEN);
+if (process.env.DISCORD_TOKEN) {
+  // Check for whitespace
+  if (process.env.DISCORD_TOKEN.trim() !== process.env.DISCORD_TOKEN) {
+    logger.warn('⚠️ Warning: DISCORD_TOKEN has leading or trailing whitespace. Trimming it.');
+    process.env.DISCORD_TOKEN = process.env.DISCORD_TOKEN.trim();
+  }
+  logger.log(`🔑 Token loaded (Length: ${process.env.DISCORD_TOKEN.length})`);
+}
+
+client.login(process.env.DISCORD_TOKEN).catch(error => {
+  logger.error(`❌ Login failed: ${error.message}`);
+  if (error.message.includes('token')) {
+    logger.error('👉 Please check your .env file and ensure DISCORD_TOKEN is correct.');
+  }
+  process.exit(1);
+});
 
 // Terminal command handler
 const rl = readline.createInterface({
@@ -125,6 +141,34 @@ rl.on('line', async (input) => {
     } catch (error) {
       logger.error(`❌ Failed to reload: ${error.message}`);
     }
+  } else if (command === 'test connections') {
+    logger.log('🔍 Testing connection to all servers...');
+    
+    if (!client.config || !client.config.minecraftServers) {
+      logger.error('❌ No server configuration loaded.');
+    } else {
+      const servers = client.config.minecraftServers;
+      const serverIds = Object.keys(servers);
+      
+      if (serverIds.length === 0) {
+        logger.warn('⚠️ No servers configured.');
+      } else {
+        for (const serverId of serverIds) {
+          const serverConfig = servers[serverId];
+          const serverName = serverConfig.displayName || serverId;
+          
+          // Use 'list' command as a ping
+          const result = await rconManager.executeCommand(serverConfig, 'list', serverName);
+          
+          if (result.success) {
+            logger.success(`${serverName}: Online`);
+          } else {
+            logger.error(`${serverName}: Offline - ${result.error}`);
+          }
+        }
+      }
+    }
+    logger.log('🏁 Connection test complete.');
   } else if (command === 'stop' || command === 'exit') {
     logger.log('🛑 Shutting down...');
     client.destroy();
