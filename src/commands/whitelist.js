@@ -84,7 +84,8 @@ module.exports = {
         )
     ),
 
-  async autocomplete(interaction, serversConfig) {
+  async autocomplete(interaction) {
+    const serversConfig = interaction.client.config;
     const guildId = interaction.guildId;
     
     // Get available servers for this Discord server
@@ -102,7 +103,8 @@ module.exports = {
     await interaction.respond(choices);
   },
 
-  async execute(interaction, serversConfig) {
+  async execute(interaction) {
+    const serversConfig = interaction.client.config;
     // Check if bot is in a guild
     if (!interaction.guildId) {
       return await interaction.reply({

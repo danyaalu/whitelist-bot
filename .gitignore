@@ -4,3 +4,4 @@ data/users.json
 data/servers.json
 *.log
 .DS_Store
+logs
