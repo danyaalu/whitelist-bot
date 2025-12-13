@@ -1,6 +1,8 @@
 /**
- * Utility for logging with timestamps
+ * Utility for logging with timestamps and file storage
  */
+const fs = require('fs');
+const path = require('path');
 
 // ANSI color codes
 const colors = {
@@ -13,6 +15,71 @@ const colors = {
   cyan: '\x1b[36m',
   white: '\x1b[37m',
 };
+
+// Initialize log file
+const logsDir = path.join(__dirname, '../../logs');
+let currentLogFile = null;
+
+try {
+  // Ensure logs directory exists
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+
+  // Determine log filename
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+
+  // Find existing logs for today to determine index
+  const files = fs.readdirSync(logsDir);
+  const todayLogs = files.filter(file => file.startsWith(dateStr) && file.endsWith('.log'));
+  
+  let maxIndex = 0;
+  for (const file of todayLogs) {
+    // Format: YYYY-MM-DD-X.log
+    const parts = file.replace('.log', '').split('-');
+    const index = parseInt(parts[parts.length - 1]);
+    if (!isNaN(index) && index > maxIndex) {
+      maxIndex = index;
+    }
+  }
+
+  const nextIndex = maxIndex + 1;
+  currentLogFile = path.join(logsDir, `${dateStr}-${nextIndex}.log`);
+  
+  // Create the file immediately to reserve the name
+  fs.writeFileSync(currentLogFile, `Log started at ${new Date().toISOString()}\n`);
+  
+} catch (err) {
+  console.error('Failed to initialize logger:', err);
+}
+
+/**
+ * Strip ANSI color codes from string
+ * @param {string} str 
+ * @returns {string}
+ */
+function stripAnsi(str) {
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+}
+
+/**
+ * Write message to log file
+ * @param {string} message 
+ */
+function writeToFile(message) {
+  if (currentLogFile) {
+    try {
+      const cleanMessage = stripAnsi(message);
+      fs.appendFileSync(currentLogFile, cleanMessage + '\n');
+    } catch (err) {
+      console.error('Failed to write to log file:', err);
+    }
+  }
+}
 
 /**
  * Get formatted timestamp
@@ -35,7 +102,9 @@ function getTimestamp() {
  * @param {string} message - Message to log
  */
 function log(message) {
-  console.log(`${getTimestamp()} ${message}`);
+  const msg = `${getTimestamp()} ${message}`;
+  console.log(msg);
+  writeToFile(msg);
 }
 
 /**
@@ -43,7 +112,9 @@ function log(message) {
  * @param {string} message - Error message to log
  */
 function error(message) {
-  console.error(`${getTimestamp()} ${colors.red}${message}${colors.reset}`);
+  const timestamp = getTimestamp();
+  console.error(`${timestamp} ${colors.red}${message}${colors.reset}`);
+  writeToFile(`${timestamp} [ERROR] ${message}`);
 }
 
 /**
@@ -51,7 +122,9 @@ function error(message) {
  * @param {string} message - Warning message to log
  */
 function warn(message) {
-  console.warn(`${getTimestamp()} ${colors.yellow}${message}${colors.reset}`);
+  const timestamp = getTimestamp();
+  console.warn(`${timestamp} ${colors.yellow}${message}${colors.reset}`);
+  writeToFile(`${timestamp} [WARN] ${message}`);
 }
 
 /**
@@ -59,7 +132,9 @@ function warn(message) {
  * @param {string} message - Success message to log
  */
 function success(message) {
-  console.log(`${getTimestamp()} ${colors.green}${message}${colors.reset}`);
+  const timestamp = getTimestamp();
+  console.log(`${timestamp} ${colors.green}${message}${colors.reset}`);
+  writeToFile(`${timestamp} [SUCCESS] ${message}`);
 }
 
 /**
@@ -67,7 +142,9 @@ function success(message) {
  * @param {string} message - Info message to log
  */
 function info(message) {
-  console.log(`${getTimestamp()} ${colors.cyan}${message}${colors.reset}`);
+  const timestamp = getTimestamp();
+  console.log(`${timestamp} ${colors.cyan}${message}${colors.reset}`);
+  writeToFile(`${timestamp} [INFO] ${message}`);
 }
 
 module.exports = {
