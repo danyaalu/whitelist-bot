@@ -6,6 +6,7 @@ class FileManager {
   constructor() {
     this.usersFilePath = path.join(__dirname, '../../data/users.json');
     this.serversFilePath = path.join(__dirname, '../../data/servers.json');
+    this.serversExamplePath = path.join(__dirname, '../../data/servers.json.example');
   }
 
   /**
@@ -85,7 +86,16 @@ class FileManager {
       return config;
     } catch (error) {
       if (error.code === 'ENOENT') {
-        throw new Error('servers.json not found! Please create it with your server configuration.');
+        // Try to copy from example if it exists
+        try {
+          await fs.copyFile(this.serversExamplePath, this.serversFilePath);
+          logger.warn('⚠️ servers.json not found. Created one from servers.json.example. Please configure it!');
+          // Read the newly created file
+          const data = await fs.readFile(this.serversFilePath, 'utf8');
+          return JSON.parse(data);
+        } catch (copyError) {
+          throw new Error('servers.json not found and failed to create from example! Please create it with your server configuration.');
+        }
       }
       throw new Error(`Failed to load servers.json: ${error.message}`);
     }

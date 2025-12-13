@@ -6,6 +6,7 @@ const readline = require('readline');
 const fileManager = require('./src/utils/fileManager');
 const logger = require('./src/utils/logger');
 const commandLoader = require('./src/utils/commandLoader');
+const http = require('http');
 
 // Validate required environment variables
 if (!process.env.DISCORD_TOKEN) {
@@ -22,6 +23,19 @@ if (!process.env.CLIENT_ID) {
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
+
+// Optional: Start a simple HTTP server for Pterodactyl/Health checks
+if (process.env.SERVER_PORT || process.env.PORT) {
+  const port = process.env.SERVER_PORT || process.env.PORT;
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is running\n');
+  });
+  
+  server.listen(port, () => {
+    logger.log(`🌐 HTTP Server listening on port ${port}`);
+  });
+}
 
 // Load commands
 commandLoader.loadCommands(client);
