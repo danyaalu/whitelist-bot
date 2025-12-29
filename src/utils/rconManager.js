@@ -89,43 +89,35 @@ class RconManager {
    * @param {'add'|'remove'} action - The action to perform
    * @param {string} platform - "java" or "bedrock"
    * @param {string} username - Username or gamertag
-   * @param {string|null} uuid - UUID (Java only, stored for record-keeping but not used in commands)
+   * @param {string|null} uuid - UUID (required for add, Java or Floodgate UUID)
    * @returns {Promise<Object>} Result from server
    */
   async executeWhitelistCommand(serverConfig, serverId, action, platform, username, uuid = null) {
-    // Get the appropriate command template with defaults
-    let commandTemplate;
+    let command;
+    
     if (action === 'add') {
-      commandTemplate = platform === 'java' 
-        ? serverConfig.whitelistCommandJava 
-        : serverConfig.whitelistCommandBedrock;
-    } else { // action === 'remove'
-      // Use configured remove command or default to standard Minecraft commands
-      if (platform === 'java') {
-        commandTemplate = serverConfig.whitelistRemoveCommandJava || 'whitelist remove {username}';
-      } else {
-        commandTemplate = serverConfig.whitelistRemoveCommandBedrock || 'fwhitelist remove {gamertag}';
+      if (!uuid) {
+        return {
+          success: false,
+          serverName: serverId,
+          error: 'UUID is required for whitelist add command'
+        };
       }
-    }
-
-    if (!commandTemplate) {
+      
+      // For bedrock players, prefix username with a dot
+      const displayName = platform === 'bedrock' ? `.${username}` : username;
+      command = `awhitelist add ${displayName} ${uuid}`;
+    } else if (action === 'remove') {
+      // For bedrock players, prefix username with a dot
+      const displayName = platform === 'bedrock' ? `.${username}` : username;
+      command = `awhitelist remove ${displayName}`;
+    } else {
       return {
         success: false,
         serverName: serverId,
-        error: `${action} command for ${platform} is not configured for this server.`
+        error: `Invalid action: ${action}`
       };
     }
-
-    // Build command with placeholders
-    // NOTE: For Java Edition, we always use {username} instead of {uuid} because:
-    // 1. Vanilla Minecraft's whitelist command accepts usernames
-    // 2. Online-mode servers will automatically resolve to Mojang UUIDs
-    // 3. Offline-mode servers generate different UUIDs, so using Mojang UUIDs would fail
-    // The UUID is fetched and stored for validation and record-keeping only
-    const command = commandTemplate
-      .replace('{uuid}', username)  // Always use username even if {uuid} placeholder is used
-      .replace('{username}', username)
-      .replace('{gamertag}', username);
     
     const result = await this.executeCommand(serverConfig, command, serverId);
     

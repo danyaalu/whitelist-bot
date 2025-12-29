@@ -225,14 +225,14 @@ module.exports = {
       });
     }
 
-    // Validate with Mojang API
+    // Validate with MCProfile API
     await interaction.editReply({
-      content: `⏳ Validating username with Mojang API...`,
+      content: `⏳ Validating username with MCProfile...`,
     });
 
-    let mojangData;
+    let profileData;
     try {
-      mojangData = await mojangApi.getUUID(username);
+      profileData = await mojangApi.getJavaProfile(username);
     } catch (error) {
       return await interaction.editReply({
         content: `❌ **Failed to validate username:** ${error.message}`,
@@ -241,32 +241,33 @@ module.exports = {
 
     // Send whitelist command to the selected server
     await interaction.editReply({
-      content: `⏳ Adding **${mojangData.username}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
+      content: `⏳ Adding **${profileData.username}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
     const result = await rconManager.whitelistOnServer(
       serverConfig,
       serverId,
       'java',
-      mojangData.username,
-      mojangData.uuid
+      profileData.username,
+      profileData.uuid
     );
 
     if (result.success) {
       // Save to users.json
-      users = fileManager.addUserToServer(users, discordUserId, serverId, 'java', mojangData.username, mojangData.uuid);
+      users = fileManager.addUserToServer(users, discordUserId, serverId, 'java', profileData.username, profileData.uuid);
       await fileManager.saveUsers(users);
 
-      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${mojangData.username} to ${serverConfig.displayName} (Java Edition)`);
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${profileData.username} to ${serverConfig.displayName} (Java Edition)`);
 
       await interaction.editReply({
         content: `✅ **Successfully whitelisted!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
           `**Platform:** Java Edition\n` +
-          `**Username:** ${mojangData.username}\n`,
+          `**Username:** ${profileData.username}\n` +
+          `**UUID:** ${profileData.uuid}`,
       });
     } else {
-      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${mojangData.username} to ${serverConfig.displayName} (Java Edition): ${result.error}`);
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${profileData.username} to ${serverConfig.displayName} (Java Edition): ${result.error}`);
 
       await interaction.editReply({
         content: `❌ **Failed to whitelist**\n\n` +
@@ -281,40 +282,55 @@ module.exports = {
     const gamertag = interaction.options.getString('gamertag');
 
     // Basic validation (Bedrock gamertags have different rules)
-    if (gamertag.length < 3 || gamertag.length > 16) {
+    if (!mojangApi.isValidGamertag(gamertag)) {
       return await interaction.editReply({
         content: `❌ Invalid gamertag format. Gamertags must be 3-16 characters.`,
       });
     }
 
+    // Validate with MCProfile API
+    await interaction.editReply({
+      content: `⏳ Validating gamertag with MCProfile...`,
+    });
+
+    let profileData;
+    try {
+      profileData = await mojangApi.getBedrockProfile(gamertag);
+    } catch (error) {
+      return await interaction.editReply({
+        content: `❌ **Failed to validate gamertag:** ${error.message}`,
+      });
+    }
+
     // Send whitelist command to the selected server
     await interaction.editReply({
-      content: `⏳ Adding **${gamertag}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
+      content: `⏳ Adding **${profileData.gamertag}** to **${serverConfig.displayName}**...\n\n_This may take up to 15 seconds._`,
     });
 
     const result = await rconManager.whitelistOnServer(
       serverConfig,
       serverId,
       'bedrock',
-      gamertag,
-      null
+      profileData.gamertag,
+      profileData.floodgateUuid
     );
 
     if (result.success) {
-      // Save to users.json
-      users = fileManager.addUserToServer(users, discordUserId, serverId, 'bedrock', gamertag, null);
+      // Save to users.json with Floodgate UUID
+      users = fileManager.addUserToServer(users, discordUserId, serverId, 'bedrock', profileData.gamertag, profileData.floodgateUuid);
       await fileManager.saveUsers(users);
 
-      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${gamertag} to ${serverConfig.displayName} (Bedrock Edition)`);
+      logger.success(`[SUCCESS] User ${interaction.user.tag} (${discordUserId}) added ${profileData.gamertag} to ${serverConfig.displayName} (Bedrock Edition)`);
 
       await interaction.editReply({
         content: `✅ **Successfully whitelisted!**\n\n` +
           `**Server:** ${serverConfig.displayName}\n` +
           `**Platform:** Bedrock Edition\n` +
-          `**Gamertag:** ${gamertag}`,
+          `**Gamertag:** ${profileData.gamertag}\n` +
+          `**Floodgate UUID:** ${profileData.floodgateUuid}`,
       });
     } else {
-      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${gamertag} to ${serverConfig.displayName} (Bedrock Edition): ${result.error}`);
+      logger.error(`[ERROR] User ${interaction.user.tag} (${discordUserId}) failed to add ${profileData.gamertag} to ${serverConfig.displayName} (Bedrock Edition): ${result.error}`);
 
       await interaction.editReply({
         content: `❌ **Failed to whitelist**\n\n` +
